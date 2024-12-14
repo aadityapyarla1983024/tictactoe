@@ -1,229 +1,272 @@
 #include <iostream>
 #include <vector>
 #include <ctime>
-using std::cout, std::cin, std::string, std:: endl;
+using std::cout, std::cin, std::endl, std::string;
 
-namespace pos {
+namespace glb {
+
+    bool running = true;  //This is to ensure the termination from the replay function
     int choice = 0;
-    std::vector<int> excludes = {};
-    string elements[] = {" "," "," "," "," "," "," "," "," "};  
+    std::vector<int> exnum = {};
+    string spaces[] = {" ", " ", " ", " ", " ", " ", " ", " ", " "};
 }
-bool isExcluded(int num);
-int check();
+
 void intro();
 void drawboard();
-int computerguess();
-int replay();
-int update(int position);
+bool posExists(int pos);
+bool update(int user_pos);
+void winCheck();
+void tieCheck();
+void cguess();
+void replay();
+
 
 
 int main()
 {
-    srand(time(0));
     intro();
-    do {
-        bool exitFlag = false;
+    do
+    {
         int position;
+        bool exitFlag = false;
+        srand(time(0));
+        
+        // Welcome for the game and further showing the empty 
+        // board and in the further repetetion display the 
+        // updated board
         drawboard();
-        cout << "Enter your position of choice or 0 -> Exit: ";
 
+        cout << "Enter your position of choice or 0 -> Exit: ";
+        // Loop for validation of the input
         while(cin >> position && (position < 0 || position > 9))
         {
-            cout << "Enter a valid position please :<" << endl;
-            cin >> position;
+            cout << "Enter a valid position please: ";
             if (position == 0)
             {
                 exitFlag = true;
                 break;
             }
         }
-        if(exitFlag == true || position == 0)
-            cout << "See you later, have a nice day" << endl;
-            break;
-        
-        if (!update(--position))
-        {
-            cout << "Please enter a position still not taken" << endl;
-            continue;
-        }
-        
-
-        if(!check())
-        {
+        if(exitFlag == true || position == 0){
             cout << "See you later, have a nice day" << endl;
             break;
         }
-    } while (true);
+        
+        // Updating and verifying
+        while(!update(position))
+        {
+            cout << "Please enter a unoccupied position: ";
+            cin >> position;
+        }
+        // Now we'll check for a win and tie and also check the running status 
+        // after every win and tie check
 
+        winCheck();
+        if(!glb::running)
+        {
+            cout << "See you again, have nice day!" << endl;
+            break;
+        }
+        tieCheck();
+        if(!glb::running)
+        {
+            cout << "See you again, have nice day!" << endl;
+            break;
+        }
+        // Now it's time for the computer to make a guess
+        cguess();
+        // Now we'll check for a win and tie and also check the running status 
+        // after every win and tie check
+
+        winCheck();
+        if(!glb::running)
+        {
+            cout << "See you again, have nice day!" << endl;
+            break;
+        }
+        tieCheck();
+        if(!glb::running)
+        {
+            cout << "See you again, have nice day!" << endl;
+            break;
+        }
+    } while (glb::running);
+    
     return 0;
 }
 
-int update(int position)
+
+void cguess()
 {
-    if (isExcluded(position))
+    int cpos;
+    do
     {
-        return 0;
-    }
-    
-    pos::excludes.push_back(position);
-    if (pos::choice == 1)
+        // Keeps on guessing a untill a unoccupied position is guessed
+        cpos = rand() % 9;
+    } while (posExists(cpos));
+    // Updating the occupied positions list
+    glb::exnum.push_back(cpos);
+    // Updating the space in the board
+    if (glb::choice == 1)
     {
-        pos::elements[position] = "X";
+        glb::spaces[cpos] = "O";
     }
-    else
+    else 
     {
-        pos::elements[position] = "O";
+        glb::spaces[cpos] = "X";
     }
-    if(!computerguess())
-    {
-        return 1;
-    }
-    return 1;
+
 }
 
-int check()
+// This checks if anyone has won and return the control to the function replay
+void winCheck()
 {
     if(
-        (pos::elements[0] == "X" && pos::elements[1] == "X" && pos::elements[2] == "X") || 
-        (pos::elements[0] == "X" && pos::elements[3] == "X" && pos::elements[6] == "X") ||
-        (pos::elements[1] == "X" && pos::elements[4] == "X" && pos::elements[7] == "X") ||
-        (pos::elements[2] == "X" && pos::elements[5] == "X" && pos::elements[8] == "X") ||
-        (pos::elements[5] == "X" && pos::elements[7] == "X" && pos::elements[8] == "X") ||
-        (pos::elements[0] == "X" && pos::elements[4] == "X" && pos::elements[8] == "X") ||
-        (pos::elements[2] == "X" && pos::elements[4] == "X" && pos::elements[5] == "X")
+        // All the possible combinations to win
+        (glb::spaces[0] == "X" && glb::spaces[1] == "X" && glb::spaces[2] == "X") || 
+        (glb::spaces[0] == "X" && glb::spaces[3] == "X" && glb::spaces[6] == "X") ||
+        (glb::spaces[1] == "X" && glb::spaces[4] == "X" && glb::spaces[7] == "X") ||
+        (glb::spaces[2] == "X" && glb::spaces[5] == "X" && glb::spaces[8] == "X") ||
+        (glb::spaces[6] == "X" && glb::spaces[7] == "X" && glb::spaces[8] == "X") ||
+        (glb::spaces[0] == "X" && glb::spaces[4] == "X" && glb::spaces[8] == "X") ||
+        (glb::spaces[2] == "X" && glb::spaces[4] == "X" && glb::spaces[6] == "X") ||
+        (glb::spaces[3] == "X" && glb::spaces[4] == "X" && glb::spaces[5] == "X")
     )
     {
-        if(pos::choice == 1)
+        if(glb::choice == 1)
         {
+            // Board is drawn for the last time for user satisfaction
             drawboard();
             cout << "Your win was a coincidence :<" << endl;
-            return replay();
+            replay();
         }
         else
         {
             drawboard();
             cout << "OlaOla, did you looose :>" << endl;
-            return replay();
+            replay();
         }
     }
     else if(
-        (pos::elements[0] == "O" && pos::elements[1] == "O" && pos::elements[2] == "O") || 
-        (pos::elements[0] == "O" && pos::elements[3] == "O" && pos::elements[6] == "O") ||
-        (pos::elements[1] == "O" && pos::elements[4] == "O" && pos::elements[7] == "O") ||
-        (pos::elements[2] == "O" && pos::elements[5] == "O" && pos::elements[8] == "O") ||
-        (pos::elements[5] == "O" && pos::elements[7] == "O" && pos::elements[8] == "O") ||
-        (pos::elements[0] == "O" && pos::elements[4] == "O" && pos::elements[8] == "O") ||
-        (pos::elements[2] == "O" && pos::elements[4] == "O" && pos::elements[5] == "O")
+        // All the possible combinations to win
+        (glb::spaces[0] == "O" && glb::spaces[1] == "O" && glb::spaces[2] == "O") || 
+        (glb::spaces[0] == "O" && glb::spaces[3] == "O" && glb::spaces[6] == "O") ||
+        (glb::spaces[1] == "O" && glb::spaces[4] == "O" && glb::spaces[7] == "O") ||
+        (glb::spaces[2] == "O" && glb::spaces[5] == "O" && glb::spaces[8] == "O") ||
+        (glb::spaces[6] == "O" && glb::spaces[7] == "O" && glb::spaces[8] == "O") ||
+        (glb::spaces[0] == "O" && glb::spaces[4] == "O" && glb::spaces[8] == "O") ||
+        (glb::spaces[2] == "O" && glb::spaces[4] == "O" && glb::spaces[6] == "O") ||
+        (glb::spaces[3] == "O" && glb::spaces[4] == "O" && glb::spaces[5] == "O")
     )
     {
-        if(pos::choice == 2)
+        if(glb::choice == 2)
         {
             drawboard();
             cout << "Ahh shit! I lost for the first time, you cheater :<" << endl;
-            return replay();
+            replay();
         }
         else
         {
             drawboard();
             cout << "HeeHeeHaawHaaw, you are a loooser! :>" << endl;
-            return replay();
+            replay();
         }
     }
-
-    if(pos::excludes.size() == 9)
-    {
-        drawboard();
-        cout << "We both are having a bad day :<" << endl;
-        return replay();
-    }
-    
-    return 1;
 }
 
-bool isExcluded(int num) {
-    for (int excluded : pos::excludes) {
-        if (num == excluded) {
-            return true;  
-        }
-    }
-    return false;  
-}
-
-
-int replay()
+// Check for a tie
+void tieCheck()
 {
+    if(glb::exnum.size() == 9)
+    {
+        cout << "We both are having a bad day :<" << endl;
+        replay();
+    }
+}
+
+void drawboard()
+{
+    cout << "***************************" << endl;
+    cout << "  "<< glb::spaces[0] <<"  |  "<< glb::spaces[1] <<"  |  "<< glb::spaces[2] <<"  " << endl;
+    cout << "_____|_____|_____" << endl;
+    cout << "  "<< glb::spaces[3] <<"  |  "<< glb::spaces[4] <<"  |  "<< glb::spaces[5] <<"  " << endl;
+    cout << "_____|_____|_____" << endl;
+    cout << "  "<< glb::spaces[6] <<"  |  "<< glb::spaces[7] <<"  |  "<< glb::spaces[8] <<"  " << endl;
+    cout << "     |     |     " << endl;
+    cout << "***************************" << endl;
+    return;
+}
+
+void replay(){
     int response;
     cout << "Hey wanna play again ? It'll be fun.." << endl;
-    cout << "Enter 1 -> Yes, 2 -> No: ";
+    cout << "Choose 1 -> Yes, 2 -> No: ";
     cin >>  response;
     if (response == 1)
     {
         for (int i = 0; i < 9; i++)
         {
-            pos::elements[i] = " ";
+            glb::spaces[i] = " ";
         }
-        pos::choice = 0;
-        pos::excludes.clear();
+        glb::choice = 0;
+        glb::exnum.clear();
         intro();
-        return 1;
+        glb::running = true;
+        return;
     }
-    return 0;
-       
+    glb::running = false;
+    return;
 }
-
-
-
+// This function sets the choice of the user
 void intro()
 {
-    cout << "***************************" << endl;
-    cout << "        TIC TAC TOE        " << endl;
-    cout << "***************************" << endl;
-    cout << "Welcome these are the indices of your guesses" << endl;
-    cout << "Do Remmember! :>" << endl;
-    cout << "  1  |  2  |  3  " << endl;
-    cout << "_____|_____|_____" << endl;
-    cout << "  4  |  5  |  6  " << endl;
-    cout << "_____|_____|_____" << endl;
-    cout << "  7  |  8  |  9  " << endl;
-    cout << "     |     |     " << endl;
-    cout << "Enter 1 -> X, 2 -> O: ";
-    while(cin >> pos::choice && (pos::choice != 1 && pos::choice != 2))
+    cout << "***************************************************" << endl;
+    cout << "                    TIC TAC TOE                    " << endl;
+    cout << "***************************************************" << endl;
+    cout << "   Welcome these are the indices of your guesses   " << endl;
+    cout << "                  Do Remmember! :>                 " << endl;
+    cout << "                   1  |  2  |  3                   " << endl;
+    cout << "                 _____|_____|_____                 " << endl;
+    cout << "                   4  |  5  |  6                   " << endl;
+    cout << "                 _____|_____|_____                 " << endl;
+    cout << "                   7  |  8  |  9                   " << endl;
+    cout << "                      |     |                      " << endl;
+    cout << "Choose 1 -> X, 2 -> O: ";
+    // Loop for validate input
+    while(cin >> glb::choice && (glb::choice != 1 && glb::choice != 2))
     {
         cout << "Invalid choice. Please enter 1 or 2: ";
     }
     return;
 }
 
-void drawboard()
+// This checks if a position is already taken or not
+bool posExists(int pos)
 {
-    cout << "***************************" << endl;
-    cout << "  "<< pos::elements[0] <<"  |  "<< pos::elements[1] <<"  |  "<< pos::elements[2] <<"  " << endl;
-    cout << "_____|_____|_____" << endl;
-    cout << "  "<< pos::elements[3] <<"  |  "<< pos::elements[4] <<"  |  "<< pos::elements[5] <<"  " << endl;
-    cout << "_____|_____|_____" << endl;
-    cout << "  "<< pos::elements[6] <<"  |  "<< pos::elements[7] <<"  |  "<< pos::elements[8] <<"  " << endl;
-    cout << "     |     |     " << endl;
-    cout << "***************************" << endl;
-    return;
+    for (int occupied : glb::exnum) {
+        if (pos == occupied) {
+            return true;  
+        }
+    }
+    return false;  
 }
 
-int computerguess()
+bool update(int user_pos)
 {
-    int position;
-    if (pos::excludes.size() == 9){
-        return 0;
-    }
-    do {
-        position = rand() % 9;  
-    } while (isExcluded(position));
-    pos::excludes.push_back(position);
-    if (pos::choice == 1)
+    user_pos--;
+    if (posExists(user_pos))
     {
-        pos::elements[position] = "O";
+        return false;
     }
-    else 
+    
+    glb::exnum.push_back(user_pos);
+    if (glb::choice == 1)
     {
-        pos::elements[position] = "X";
+        glb::spaces[user_pos] = "X";
     }
-    return 1;
+    else
+    {
+        glb::spaces[user_pos] = "O";
+    }
+    return true;
 }
